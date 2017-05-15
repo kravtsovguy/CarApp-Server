@@ -16,6 +16,7 @@ config = {
 
 firebase = pyrebase.initialize_app(config)
 db = firebase.database()
+'''
 auth = firebase.auth()
 
 user = auth.sign_in_with_email_and_password("kravtsovguy@gmail.com", "carapp")
@@ -25,6 +26,7 @@ def refresh_token():
 
 def get_token():
 	return user['idToken']
+'''
 
 def recalc_consumption(car_id):
 	consumptions = db.child("cars").child(car_id).child("measurements").get()
@@ -73,13 +75,25 @@ def get_status_consumption(car_id, consumption):
 	if (p < type1_error_alert / 2):
 		status = 'alert'
 
-	return {'p_level' : p, 'status': status}
+	return {'p_level' : p, 'car_status': status}
 
 app = Flask(__name__)
 
 @app.route("/")
 def hello():
     return jsonify("This is CarApp server!")
+
+@app.route("/car",  methods=['GET'])
+def get_car_marks():
+	cars = db.child("cars").shallow().get().val()
+	list_cars = list(cars)
+	return jsonify({"marks":list_cars})
+
+@app.route("/car/<car_mark>",  methods=['GET'])
+def get_car_models(car_mark):
+	cars = db.child("cars").child(car_mark).shallow().get().val()
+	list_cars = list(cars)
+	return jsonify({"models":list_cars})
 
 @app.route("/car/<car_mark>/<car_model>",  methods=['GET'])
 def get_car(car_mark, car_model):
@@ -119,7 +133,7 @@ def set_prior_index_car(car_mark, car_model):
 	car_id = car_mark + '/' + car_model
 	data = request.get_json()
 	consumption = data["consumption"]
-	db.child("cars").child(car_id).child("prior_index").update({"m_consumption":consumption})
+	db.child("cars").child(car_id).child("prior_index").update({"m_consumption":consumption, "d_consumption":2})
 	return jsonify({"status":"OK"})
 
 @app.route("/car/index/<car_mark>/<car_model>",  methods=['POST'])
