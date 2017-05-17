@@ -120,6 +120,9 @@ def set_car(car_mark, car_model):
 def get_index_car(car_mark, car_model):
 	car_id = car_mark + '/' + car_model
 	index = db.child("cars").child(car_id).child("index").get().val()
+	if index == None:
+		index = db.child("cars").child(car_id).child("prior_index").get().val()
+		
 	return jsonify(index)
 
 @app.route("/car/prior_index/<car_mark>/<car_model>",  methods=['GET'])
