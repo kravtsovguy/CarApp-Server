@@ -51,7 +51,7 @@ def recalc_consumption(car_id):
 
 	prior_index = db.child("cars").child(car_id).child("prior_index").get().val()
 	if prior_index != None:
-		prior_koeff = (1 / (count + 1)) ** 0.5
+		prior_koeff = (1 / (0.1 * count + 1)) ** 0.5
 		#print('prior_koeff: ' + str(prior_koeff))
 		m_consumption = prior_koeff * prior_index['m_consumption'] + (1 - prior_koeff) * m_consumption
 		d_consumption = prior_koeff * prior_index['d_consumption'] + (1 - prior_koeff) * d_consumption
@@ -63,16 +63,16 @@ def recalc_consumption(car_id):
 
 def get_status_consumption(car_id, consumption):
 	index = db.child("cars").child(car_id).child("index").get().val()
-	m = -1 * abs(consumption - index["m_consumption"]) / index["d_consumption"]
-	p = norm.cdf(m)
+	m = (consumption - index["m_consumption"]) / index["d_consumption"]
+	p = 1 - norm.cdf(m)
 
 	type1_error_warning = 5.0 / 100
 	type1_error_alert = 1.0 / 100
 
 	status = 'OK'
-	if (p < type1_error_warning / 2):
+	if (p < type1_error_warning):
 		status = 'warning'
-	if (p < type1_error_alert / 2):
+	if (p < type1_error_alert):
 		status = 'alert'
 
 	return {'p_level' : p, 'car_status': status}
@@ -122,7 +122,7 @@ def get_index_car(car_mark, car_model):
 	index = db.child("cars").child(car_id).child("index").get().val()
 	if index == None:
 		index = db.child("cars").child(car_id).child("prior_index").get().val()
-		
+
 	return jsonify(index)
 
 @app.route("/car/prior_index/<car_mark>/<car_model>",  methods=['GET'])
@@ -144,6 +144,16 @@ def update_index_car(car_mark, car_model):
 	car_id = car_mark + '/' + car_model
 	data = request.get_json()
 	consumption = data["consumption"]
+
+	index = db.child("cars").child(car_id).child("index").get().val()
+	if index == None:
+		index = db.child("cars").child(car_id).child("prior_index").get().val()
+
+	m = index["m_consumption"]
+	d = index["d_consumption"]
+	if consumption < (m - 3 * d) or (m + 3 * d) < consumption:
+		return jsonify(None)
+
 
 	mc = db.child("cars").child(car_id).child("measurements_count").get().val()
 	if mc == None:
