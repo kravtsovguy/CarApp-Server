@@ -6,6 +6,8 @@ from flask import request
 import os
 import pyrebase
 from scipy.stats import norm
+import json
+import database_api
 
 config = {
 	"apiKey": "AIzaSyACDOJqP1_-6jYKCmk8LJ-svl5_Lpk9PWw",
@@ -15,6 +17,7 @@ config = {
 }
 
 firebase = pyrebase.initialize_app(config)
+auth = firebase.auth()
 db = firebase.database()
 '''
 auth = firebase.auth()
@@ -173,6 +176,50 @@ def get_status(car_mark, car_model):
 	result = get_status_consumption(car_id, consumption)
 	return jsonify(result)
 
+@app.route('/login', methods=['POST'])
+def page_sign_in():
+	#data = json.loads(request.data)
+	data = request.get_json()
+	email = data['email']
+	password = data['password']
+
+	print(email+" "+password)
+
+	result = database_api.sign_in(email, password)
+	return jsonify(result)
+
+@app.route('/signup', methods=['POST'])
+def page_sign_up():
+	#data = json.loads(request.data)
+	data = request.get_json()
+	email = data['email']
+	password = data['password']
+	name = data['name']
+
+	result = database_api.sign_up(email, password)
+	return jsonify(result)
+
+def set_user_info_main(token, info):
+	result = database_api.set_user_info(token, info)
+	return jsonify(result)
+
+@app.route('/user', methods=['POST'])
+def set_user_info():
+	data = request.get_json()
+	#data = json.loads(request.data)
+	token = request.args['token']
+	print(data["info"])
+	#info = json.loads('{"name" : "Mike"}')
+	#info = json.loads(data['info'])
+	info = data['info']
+	return set_user_info_main(token, info)
+
+@app.route('/user', methods=['GET'])
+def get_user_info():
+	#data = json.loads(request.data)
+	token = request.args['token']
+	result = database_api.get_user_info(token)
+	return jsonify(result)
 
 
 if __name__ == "__main__":
