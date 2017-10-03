@@ -66,6 +66,9 @@ def recalc_consumption(car_id):
 
 def get_status_consumption(car_id, consumption):
 	index = db.child("cars").child(car_id).child("index").get().val()
+	if index == None:
+		index = db.child("cars").child(car_id).child("prior_index").get().val()
+		
 	m = (consumption - index["m_consumption"]) / index["d_consumption"]
 	p = 1 - norm.cdf(m)
 
